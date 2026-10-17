@@ -17,8 +17,8 @@ CREATE TEMP TABLE completed_order_items AS
 -- Define date range 
 WITH params AS (
   SELECT
-    DATE '2000-01-01' AS start_date,
-    DATE '2099-01-01' AS end_date
+    DATE '2023-01-01' AS start_date,
+    DATE '2026-10-01' AS end_date
 ),
 
 -- Keeping only complete month
@@ -60,9 +60,9 @@ JOIN months ON DATE_TRUNC(DATE(order_item.created_at), MONTH) = months.month_sta
 WHERE order_item.status = 'Complete'
 ;
 
------------
+---------------------
 -- Task A3 
------------
+---------------------
 CREATE TEMP TABLE business_health AS
 
 -- Events filtered to keep 'purchase' and department per month
@@ -81,7 +81,7 @@ basic_business_metrics AS (
   SUM(gross_profit) AS gross_profit,
   COUNT(DISTINCT order_id) AS orders,
   COUNT(DISTINCT order_item_id) AS units,
-FROM `cool-subset-493209-p4.thelook.completed_order_items`
+FROM completed_order_items
 GROUP BY order_month
 ORDER BY order_month ASC
 )
@@ -95,26 +95,21 @@ SELECT b.month, revenue, gross_profit, orders, units,
 FROM basic_business_metrics b
 JOIN session_filtered s ON s.month = b.month ;
 
---------------
---Task B
---------------
+-------------------------------
+--Task B1
+-------------------------------
 
 CREATE TEMP TABLE user_months AS
-WITH first_order AS (
-  SELECT user_id, MIN(DATE_TRUNC(DATE(created_at), MONTH)) AS first_month
-  FROM `bigquery-public-data.thelook_ecommerce.order_items`
-  GROUP BY user_id
-)
+
 SELECT
-  c.user_id,
-  c.order_month   AS month,
-  f.first_month,
-  SUM(c.revenue)  AS revenue,
-  COUNT(c.order_id) as num_orders
-FROM `cool-subset-493209-p4.thelook.completed_order_items` c
-JOIN first_order f ON c.user_id = f.user_id
-GROUP BY c.user_id, c.order_month, f.first_month
-;
+  user_id,
+  order_month AS month,
+  MIN(order_month) OVER (PARTITION BY user_id) AS first_month,
+  LEAD(MIN(DATE(ordered_at))) OVER (PARTITION BY user_id ORDER BY order_month) AS next_order_date,
+  SUM(revenue)    AS revenue,
+  COUNT(order_id) AS num_orders
+FROM completed_order_items
+GROUP BY user_id, order_month;
 
 CREATE TEMP TABLE new_vs_returning AS
 SELECT
@@ -129,35 +124,22 @@ FROM user_months
 GROUP BY month
 ORDER BY month;
 
----------
---B2 
----------
-CREATE TEMP TABLE new_vs_returning AS
 
-WITH order_days AS (
-  SELECT DISTINCT user_id, order_date 
-  FROM `cool-subset-493209-p4.thelook.completed_order_items`
-),
+-----------------------------
+--Task B2 
+-----------------------------
+CREATE TEMP TABLE churn_summary AS
 
-flags AS (
-  SELECT
-    user_months.user_id,
-    user_months.month,
-    COUNTIF(order_days.order_date IS NOT NULL) > 0 AS came_back_90d
-  FROM user_months 
-  LEFT JOIN order_days 
-    ON  order_days.user_id = user_months.user_id
-    AND order_days.order_date >  LAST_DAY(user_months.month, MONTH)
-    AND order_days.order_date <= DATE_ADD(LAST_DAY(user_months.month, MONTH), INTERVAL 90 DAY)
-  GROUP BY user_months.user_id, user_months.month
-),
-monthly AS (
+WITH monthly AS (
   SELECT
     month,
     COUNT(*) AS active_customers,
-    COUNTIF(NOT came_back_90d) AS churned_raw,
-    DATE_ADD(LAST_DAY(month, MONTH), INTERVAL 90 DAY) AS window_closes_on
-  FROM flags
+    DATE_ADD(LAST_DAY(month, MONTH), INTERVAL 90 DAY) AS window_closes_on,
+    COUNTIF(
+      next_order_date IS NULL
+      OR next_order_date > DATE_ADD(LAST_DAY(month, MONTH), INTERVAL 90 DAY)
+    ) AS churned_raw
+  FROM user_months
   GROUP BY month
 )
 SELECT
@@ -166,9 +148,9 @@ SELECT
   m.window_closes_on,
   (m.window_closes_on <= as_of_date) AS is_mature,
   IF(m.window_closes_on <= as_of_date, m.churned_raw, NULL) AS churned_customers_90d,
-  IF(m.window_closes_on <= as_of_date, ROUND(m.churned_raw/m.active_customers * 100, 2), NULL) AS churn_rate_90d_pct,
+  IF(m.window_closes_on <= as_of_date,
+     ROUND(m.churned_raw / m.active_customers * 100, 2), NULL) AS churn_rate_90d_pct,
   nr.revenue_new,
   nr.revenue_returning
 FROM monthly m
-JOIN new_vs_returning nr ON nr.month = m.month
-ORDER BY m.month;
+JOIN new_vs_returning nr ON nr.month = m.month;
