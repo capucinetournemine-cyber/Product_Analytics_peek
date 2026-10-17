@@ -17,7 +17,7 @@ CREATE TEMP TABLE completed_order_items AS
 -- Define date range 
 WITH params AS (
   SELECT
-    DATE '2023-01-01' AS start_date,
+    DATE '2019-01-01' AS start_date,
     DATE '2026-10-01' AS end_date
 ),
 
@@ -60,15 +60,18 @@ JOIN months ON DATE_TRUNC(DATE(order_item.created_at), MONTH) = months.month_sta
 WHERE order_item.status = 'Complete'
 ;
 
----------------------
+-----------
 -- Task A3 
----------------------
+-----------
 CREATE TEMP TABLE business_health AS
 
 -- Events filtered to keep 'purchase' and department per month
 WITH session_filtered AS(
   SELECT DATE_TRUNC(DATE(events.created_at), MONTH) as month,
-  ROUND(COUNTIF(event_type = 'purchase')/COUNTIF(event_type = 'department'),3) * 100 as session_conversion_rate
+  ROUND(SAFE_DIVIDE(
+  COUNT(DISTINCT IF(event_type = 'purchase',   session_id, NULL)),
+  COUNT(DISTINCT IF(event_type = 'department', session_id, NULL))
+) * 100, 2) AS session_conversion_rate
   FROM `bigquery-public-data.thelook_ecommerce.events` events
   GROUP BY month
 ),
@@ -95,9 +98,9 @@ SELECT b.month, revenue, gross_profit, orders, units,
 FROM basic_business_metrics b
 JOIN session_filtered s ON s.month = b.month ;
 
--------------------------------
---Task B1
--------------------------------
+--------------
+--Task B
+--------------
 
 CREATE TEMP TABLE user_months AS
 
@@ -107,7 +110,7 @@ SELECT
   MIN(order_month) OVER (PARTITION BY user_id) AS first_month,
   LEAD(MIN(DATE(ordered_at))) OVER (PARTITION BY user_id ORDER BY order_month) AS next_order_date,
   SUM(revenue)    AS revenue,
-  COUNT(order_id) AS num_orders
+  COUNT(DISTINCT order_id) AS num_orders
 FROM completed_order_items
 GROUP BY user_id, order_month;
 
@@ -125,9 +128,9 @@ GROUP BY month
 ORDER BY month;
 
 
------------------------------
---Task B2 
------------------------------
+---------
+--B2 
+---------
 CREATE TEMP TABLE churn_summary AS
 
 WITH monthly AS (
@@ -154,3 +157,9 @@ SELECT
   nr.revenue_returning
 FROM monthly m
 JOIN new_vs_returning nr ON nr.month = m.month;
+
+SELECT * FROM business_health ORDER BY month;
+SELECT * FROM new_vs_returning ORDER BY month;
+SELECT * FROM churn_summary ORDER BY month;
+
+
