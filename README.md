@@ -1,1 +1,1 @@
-# Product_Analytics_peek
+# Peek Senior Data Analyst Case Study 
