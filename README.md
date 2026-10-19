@@ -33,7 +33,7 @@ Dataset: `bigquery-public-data.thelook_ecommerce` (BigQuery).
 | **Returning customer (month M)** | Active in M, with a first completed order in an earlier month |
 | **90-day churn (month M)** | Active in M, and the customer's next completed order is missing or later than the end of M plus 90 days (the window starts the day after the end of M). Churn rate = churned / active |
 | **Session conversion rate** | Purchase events / department events in the month, based on the month of the event (see limitations) |
-| **Return rate (brand)** | [Returned items / (completed + returned items); cancelled, processing and shipped items are excluded because their outcome is not known. Adapt to your query.] |
+| **Return rate (brand)** | Returned items / (completed + returned items); cancelled, processing and shipped items are excluded because their outcome is not known. |
 
 ## Assumptions and date ranges
  
