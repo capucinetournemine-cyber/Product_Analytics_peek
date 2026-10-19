@@ -66,7 +66,7 @@ Dataset: `bigquery-public-data.thelook_ecommerce` (BigQuery).
 2. **Binary and reversible.** "Churned" customers can come back, so this measures lapsing, not permanent loss. *Refinement:* track reactivation and call the metric "lapsed".
 
 ## 6. Dashboard link 
-https://datastudio.google.com/s/ps4gAaZq03E
+[https://datastudio.google.com/s/ps4gAaZq03E](https://datastudio.google.com/reporting/b1d0dcad-1382-409a-b938-f4f9789a720a)
 
 ## 7. AI Workflow idea 
 **Workflow idea:** Build an AI-powered workflow that analyzes user comments and automatically generates a monthly performance summary for each brand. The goal is to help brands understand customer sentiment, identify recurring feedback and spot areas for improvement without manually reviewing thousands of comments.
