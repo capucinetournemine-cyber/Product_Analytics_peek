@@ -4,6 +4,16 @@ Analysis for TheLook, an ecommerce marketplace, written as its first Senior Data
 
 Dataset: `bigquery-public-data.thelook_ecommerce` (BigQuery).
 
+**Contents**
+1. [How to run queries files](#1-how-to-run-queries-files)
+2. [Definitions](#2-definitions)
+3. [Assumptions and date ranges](#3-assumptions-and-date-ranges)
+4. [Data quality decisions](#4-data-quality-decisions)
+5. [Limitations of the 90-day churn definition](#5-limitations-of-the-90-day-churn-definition)
+6. [Dashboard link ](#6-dashboard-link)
+7. [AI Workflow idea ](#7-ai-workflow-idea)
+8. [AI use in the analysis](#8-ai-use-in-the-analysis)
+
 ## 1. How to run queries files
 **Steps**
 1. Download the files in `sql/`.
@@ -21,7 +31,7 @@ Dataset: `bigquery-public-data.thelook_ecommerce` (BigQuery).
 | `new_vs_returning` | B1 | One month | `month`, `active_customers`, `new_customers`, `returning_customers`, `revenue_new`, `revenue_returning`, `pct_revenue_from_returning` | Visual 2 |
 | `churn_summary` | B2 | One month | `month`, `active_customers`, `window_closes_on`, `is_mature`, `churned_customers_90d`, `churn_rate_90d_pct` (empty for immature months), `revenue_new`, `revenue_returning` | Visual 2 (revenue bars and churn line) |
 
-## Definitions
+## 2. Definitions
  
 | Term | Definition |
 |---|---|
@@ -35,7 +45,7 @@ Dataset: `bigquery-public-data.thelook_ecommerce` (BigQuery).
 | **Session conversion rate** | Purchase events / department events in the month, based on the month of the event (see limitations) |
 | **Return rate (brand)** | Returned items / (completed + returned items); cancelled, processing and shipped items are excluded because their outcome is not known. |
 
-## Assumptions and date ranges
+## 3. Assumptions and date ranges
  
 - **`As-of date`:** It is the smallest of the last order date, the last event date and today, so it is never in the future. It is a parameter so results can be reproduced or backtested.
 - **Data window:** from 1 Jan 2019 to the last **complete** month before today, which is **Sep 2026** on the as-of date. The window is built with a month list: a month is kept only if it starts on or after `start_date`, ends on or before `end_date` and starts before the first day of the current month. The current month is therefore excluded, so a partial month never looks like a drop. The dashboard shows the last 24 months, Oct 2024 to Oct 2026.
@@ -44,14 +54,21 @@ Dataset: `bigquery-public-data.thelook_ecommerce` (BigQuery).
 - **Future-dated orders are excluded** because only complete past months are kept.
 - **No filter on price or cost** in the base model; the data quality checks found no invalid values.
 
-## Limitations Of the 90-day churn definition
+## 4. Data Quality decisions 
+- **`shipped_before_created`** (30.11% failed): Escalate. Investigate timestamp inconsistencies and timezone issues. Flag affected orders and exclude them from shipping-time analyses until validated.
+
+- **`future_dated_orders`** (0.79% failed): Fix / Flag. Validate future timestamps, correct confirmed errors, and exclude unfulfilled orders from completed-order KPIs.
+
+- **`events_before_user_signup`** (0.14% failed): Flag / Fix. Investigate timestamp or user-mapping inconsistencies and exclude unverified events from post-signup funnel analyses.
+
+## 5. Limitations of the 90-day churn definition
 1. **One fixed window for everyone.** 90 days is arbitrary; categories with long repurchase cycles look "churned" while still healthy. *Refinement:* set the window from the observed distribution of time between orders (for example the 80th to 90th percentile), per category or segment.
 2. **Binary and reversible.** "Churned" customers can come back, so this measures lapsing, not permanent loss. *Refinement:* track reactivation and call the metric "lapsed".
 
-## Dashboard link 
+## 6. Dashboard link 
 https://datastudio.google.com/s/ps4gAaZq03E
 
-## AI Workflow idea 
+## 7. AI Workflow idea 
 **Workflow idea:** Build an AI-powered workflow that analyzes user comments and automatically generates a monthly performance summary for each brand. The goal is to help brands understand customer sentiment, identify recurring feedback and spot areas for improvement without manually reviewing thousands of comments.
 
 - **Data inputs:** The model would analyze user comments, reviews and feedback associated with each brand, along with relevant metadata such as dates, product categories and sentiment labels. It could identify recurring themes, positive and negative feedback, and changes in customer sentiment over time. Only data relevant to the brand’s analysis would be included. Personal information, sensitive data and comments belonging to other brands would be excluded.
@@ -70,7 +87,7 @@ https://datastudio.google.com/s/ps4gAaZq03E
 
 - **Shutdown criteria:** The workflow would be paused if it repeatedly generates unsupported insights, produces materially incorrect metrics, exposes data across brands or fails to save meaningful time compared with manual reporting. It would only be relaunched once the underlying issues had been addressed and the system had passed validation tests.
 
-## AI use in the analysis
+## 8. AI use in the analysis
 I use an LLM assistant (Claude) to help me debug certain parts of my queries. I also use it to organize and clean up my code after analysis, so that it’s as easy as possible for an outsider to understand, and to ensure I’m following best practices.
 I always make sure that Claude doesn't change the logic of my query, and I run everything again before submitting.
 
