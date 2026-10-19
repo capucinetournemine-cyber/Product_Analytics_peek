@@ -7,7 +7,7 @@ Dataset: `bigquery-public-data.thelook_ecommerce` (BigQuery).
 ## 1. How to run queries files
 **Steps**
 1. Download the files in `sql/`.
-2. Open each file in the BigQuery console and run it **as a whole** (select all, then Run). Do not run the statements one by one: the scripts create temporary tables (for example `completed_order_items`), which only exist while the script is running, and BigQuery returns the error "Use of CREATE TEMPORARY TABLE requires a script or session" otherwise.
+2. Open each file in the BigQuery console and run it **as a whole**. Do not run the statements one by one: the scripts create temporary tables (for example `completed_order_items`), which only exist while the script is running, and BigQuery returns the error "Use of CREATE TEMPORARY TABLE requires a script or session" otherwise.
 3. Each script is self-contained: parameters, the base model `completed_order_items` (single source of truth for that script), then the final queries. Each final query returns its own result tab.
 4. Run order does not matter, since no script depends on another.
 
