@@ -35,14 +35,14 @@ Dataset: `bigquery-public-data.thelook_ecommerce` (BigQuery).
  
 | Term | Definition |
 |---|---|
-| **Revenue** | `sale_price` of completed items, dated by **order date** (not delivery date) |
+| **Revenue** | `sale_price` of completed items, dated by **`order date`** |
 | **Gross profit / margin** | `sale_price` minus product `cost`; margin = gross profit / revenue |
 | **AOV** | Revenue / completed orders |
 | **Active customer (month M)** | At least one completed order in month M |
-| **New customer (month M)** | Month M is the month of the customer's first completed order in the data (see the limitation on the start date) |
+| **New customer (month M)** | Month M is the month of the customer's first completed order in the data |
 | **Returning customer (month M)** | Active in M, with a first completed order in an earlier month |
 | **90-day churn (month M)** | Active in M, and the customer's next completed order is missing or later than the end of M plus 90 days (the window starts the day after the end of M). Churn rate = churned / active |
-| **Session conversion rate** | Purchase events / department events in the month, based on the month of the event (see limitations) |
+| **Session conversion rate** | Purchase events / department events in the month, based on the month of the event|
 | **Return rate (brand)** | Returned items / (completed + returned items); cancelled, processing and shipped items are excluded because their outcome is not known. |
 
 ## 3. Assumptions and date ranges
